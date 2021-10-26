@@ -6,7 +6,8 @@ import algorithms.trellis_bma
 import random
 
 import logging
-
+import argparse
+import time
 
 def read_centers_and_clusters():
     centers = []
@@ -22,21 +23,29 @@ def read_centers_and_clusters():
 
 if __name__ == '__main__':
     logging.basicConfig(level=LOGGING_LEVEL)
+    parser = argparse.ArgumentParser(description='Reconstruct DNA string from noisy traces using trellis.')
+    parser.add_argument("--trace-num", type=int, help="Number of traces for each string")
+    parser.add_argument("--from-idx", type=int, help="index of clusters in dataset to start from")
+    parser.add_argument("--to-idx", type=int, help="index of clusters in dataset to finish (non inclusive)")
+    parser.add_argument("--results-file", type=str, help="write the reconstruction results to this file")
+    args = parser.parse_args()
+
+    if not args.results_file:
+        current_datetime = time.strftime("%Y%m%d-%H:%M:%S")
+        args.results_file = f"results_{args.trace_num}_traces_{current_datetime}.txt"
+
     if USE_NANOPORE_DATA_FROM_FILE:
         centers, clusters = read_centers_and_clusters()
-        from_idx = 2500
-        to_idx = 2600
-        trace_num = 4
         results = []
-        for original, traces in zip(centers[from_idx:to_idx], clusters[from_idx:to_idx]):
-            chosen_traces = random.sample(traces, trace_num)
+        for original, traces in zip(centers[args.from_idx: args.to_idx], clusters[args.from_idx: args.to_idx]):
+            chosen_traces = random.sample(traces, args.trace_num)
             logging.info(f"original: {original}")
             logging.info("traces:")
             logging.info(",\n".join(chosen_traces))
 
             results.append(algorithms.trellis_bma.compute_trellis_bma_estimation(chosen_traces, original))
 
-        with open(f"results_{trace_num}_traces.txt", "w") as f:
+        with open(args.results_file, "w") as f:
             f.writelines((f"{hamm}, {leven}, {original}\n" for original, hamm, leven in results))
     else:
         if USE_CUSTOM_TRACES:
