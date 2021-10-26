@@ -24,6 +24,37 @@ class TrellisMetadata(NamedTuple):
 
 
 def compute_trellis_bma_estimation(traces, original):
+    if ESTIMATE_SECOND_HALF_REVERSED:
+        first_half_estimates = build_trellis_and_estimate(traces, original, len(original) // 2)
+        reversed_traces = [t[::-1] for t in traces]
+        reversed_original = original[::-1]
+        second_half_length = len(original) - (len(original)//2)
+        second_half_estimates = list(reversed(build_trellis_and_estimate(reversed_traces, reversed_original, second_half_length)))
+        final_estimate = first_half_estimates + second_half_estimates
+    else:
+        final_estimate = build_trellis_and_estimate(traces, original, len(original))
+
+    #for stage in reversed(range(len(original) // 2, len(original))):
+    #    sync_probabilities_and_estimate_stage(stage, trellises_metadata, traces,
+    #                                          V_per_index_per_symbol[stage], is_first_half=False)
+    #
+    #    second_half_estimates.insert(0, max(Alphabet, key=lambda c: V_per_index_per_symbol[stage][c]))
+
+    final_estimate_str = "".join(final_estimate)
+    print("estimate:")
+    print(final_estimate_str)
+    print("original:")
+    print(original)
+    hamm = algorithms.common.hamming_distance(original, final_estimate_str)
+    print(f"hamming distance from original: {hamm}")
+    levenstein = algorithms.common.levenshtein_distance(original, final_estimate_str)
+    print(f"levenstein distance: {levenstein}")
+    print(f"traces: {traces}")
+
+    return final_estimate_str, hamm, levenstein
+
+
+def build_trellis_and_estimate(traces, original, estimation_len):
     trellises_metadata = []
 
     for trace in traces:
@@ -32,20 +63,20 @@ def compute_trellis_bma_estimation(traces, original):
         F_values = algorithms.common.compute_Fs_for_all_nodes(trellis, topological_ordering)
         B_values = algorithms.common.compute_Bs_for_all_nodes(trellis, topological_ordering, [trace])
         Sm_per_stage = algorithms.common.compute_Sm_foreach_stage_and_symbol(trellis, [trace])
-        vertices_by_stage_by_substage = algorithms.common.get_vertices_by_stage_by_substage_sorted_topologically(topological_ordering)
+        vertices_by_stage_by_substage = algorithms.common.get_vertices_by_stage_by_substage_sorted_topologically(
+            topological_ordering)
         vk_estimations = defaultdict(dict)
         trellises_metadata.append(TrellisMetadata(trellis, topological_ordering,
                                                   F_values, B_values, Sm_per_stage,
                                                   vertices_by_stage_by_substage, vk_estimations))
 
-    #Vk_per_trace_per_stage = defaultdict(lambda: defaultdict(float))
+    # Vk_per_trace_per_stage = defaultdict(lambda: defaultdict(float))
     V_per_index_per_symbol = defaultdict(dict)
-    first_half_estimates = []
-    second_half_estimates = []
+    estimates = []
 
     # first half of stages
-    #for stage in range(len(original) // 2):
-    for stage in range(len(original)):
+    # for stage in range(len(original) // 2):
+    for stage in range(estimation_len):
         # # compute V^k for all trellises
         # for trace_idx, trellis_metadata in enumerate(trellises_metadata):
         #     for symbol in Alphabet:
@@ -126,27 +157,9 @@ def compute_trellis_bma_estimation(traces, original):
         sync_probabilities_and_estimate_stage(stage, trellises_metadata, traces,
                                               V_per_index_per_symbol[stage], is_first_half=True)
 
-        first_half_estimates.append(max(Alphabet, key=lambda c: V_per_index_per_symbol[stage][c]))
+        estimates.append(max(Alphabet, key=lambda c: V_per_index_per_symbol[stage][c]))
 
-    #for stage in reversed(range(len(original) // 2, len(original))):
-    #    sync_probabilities_and_estimate_stage(stage, trellises_metadata, traces,
-    #                                          V_per_index_per_symbol[stage], is_first_half=False)
-    #
-    #    second_half_estimates.insert(0, max(Alphabet, key=lambda c: V_per_index_per_symbol[stage][c]))
-
-    final_estimate = first_half_estimates + second_half_estimates
-    final_estimate_str = "".join(final_estimate)
-    print("estimate:")
-    print(final_estimate_str)
-    print("original:")
-    print(original)
-    hamm = algorithms.common.hamming_distance(original, final_estimate_str)
-    print(f"hamming distance from original: {hamm}")
-    levenstein = algorithms.common.levenshtein_distance(original, final_estimate_str)
-    print(f"levenstein distance: {levenstein}")
-    print(f"traces: {traces}")
-
-    return final_estimate_str, hamm, levenstein
+    return estimates
 
 
 def sync_probabilities_and_estimate_stage(stage, trellises_metadata, traces, V_per_symbol, is_first_half=True):
