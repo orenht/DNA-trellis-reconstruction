@@ -31,17 +31,22 @@ if __name__ == '__main__':
     args = parser.parse_args()
 
     if not args.results_file:
-        current_datetime = time.strftime("%Y%m%d-%H:%M:%S")
+        current_datetime = time.strftime("%Y%m%d-%H_%M_%S")
         args.results_file = f"results_{args.trace_num}_traces_{current_datetime}.txt"
 
     if USE_NANOPORE_DATA_FROM_FILE:
         centers, clusters = read_centers_and_clusters()
         results = []
-        for original, traces in zip(centers[args.from_idx: args.to_idx], clusters[args.from_idx: args.to_idx]):
+        total_processed = 0
+        for idx, (original, traces) in enumerate(zip(centers[args.from_idx: args.to_idx], clusters[args.from_idx: args.to_idx])):
+            if len(traces) < args.trace_num:
+                logging.info(f"skipping cluster {args.from_idx+idx}, has {len(traces)} traces and {args.trace_num} required")
+                continue
             chosen_traces = random.sample(traces, args.trace_num)
             logging.info(f"original: {original}")
             logging.info("traces:")
             logging.info(",\n".join(chosen_traces))
+            total_processed += 1
 
             results.append(algorithms.trellis_bma.compute_trellis_bma_estimation(chosen_traces, original))
 
