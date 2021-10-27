@@ -51,7 +51,7 @@ if __name__ == '__main__':
             results.append(algorithms.trellis_bma.compute_trellis_bma_estimation(chosen_traces, original))
 
         with open(args.results_file, "w") as f:
-            f.writelines((f"{hamm}, {leven}, {original}\n" for original, hamm, leven in results))
+            f.writelines((f"{hamm}, {leven}, {estimation}, {original}\n" for original, estimation, hamm, leven in results))
     else:
         if USE_CUSTOM_TRACES:
             original = CUSTOM_ORIGINAL

@@ -51,7 +51,7 @@ def compute_trellis_bma_estimation(traces, original):
     print(f"levenstein distance: {levenstein}")
     print(f"traces: {traces}")
 
-    return final_estimate_str, hamm, levenstein
+    return original, final_estimate_str, hamm, levenstein
 
 
 def build_trellis_and_estimate(traces, original, estimation_len):
