@@ -1,7 +1,7 @@
 import itertools
 import logging
 import networkx as nx
-from typing import NamedTuple, Tuple
+from typing import NamedTuple, Tuple, List
 
 import IO
 from consts import *
@@ -118,7 +118,7 @@ def build_new(original, traces):
     #plt.show()
 
 
-def remove_sources_except_origin(trellis: nx.DiGraph, traces: list[str]):
+def remove_sources_except_origin(trellis: nx.DiGraph, traces: List[str]):
     has_sources = True
     origin = TrellisVertex(0, -1, tuple([0] * len(traces)), "*")
     while has_sources:
