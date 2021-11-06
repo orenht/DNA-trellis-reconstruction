@@ -1,7 +1,7 @@
 import itertools
 import logging
 import networkx as nx
-from typing import NamedTuple
+from typing import NamedTuple, Tuple
 
 import IO
 from consts import *
@@ -12,7 +12,7 @@ class TrellisVertex(NamedTuple):
     stage: int
     # represents current trace index
     sub_stage: int
-    indices: tuple[int, ...]
+    indices: Tuple[int, ...]
     symbol: str
 
     # type: str
