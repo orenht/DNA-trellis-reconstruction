@@ -2,7 +2,7 @@ import trellis_graph
 import algorithms.common
 from consts import *
 
-from typing import NamedTuple
+from typing import NamedTuple, List, Dict, DefaultDict
 import networkx as nx
 import numpy as np
 from collections import defaultdict
@@ -15,12 +15,12 @@ beta_e = 1
 
 class TrellisMetadata(NamedTuple):
     trellis: nx.DiGraph
-    topological_ordering: list[trellis_graph.TrellisVertex]
-    F_values: dict[trellis_graph.TrellisVertex, float]
-    B_values: dict[trellis_graph.TrellisVertex, float]
-    Sm_per_stage_per_symbol: dict[int, dict[str, list[trellis_graph.TrellisVertex]]]
-    vertices_by_stage_by_substage_sorted_topologically: dict[int, dict[int, list[trellis_graph.TrellisVertex]]]
-    Vk_estimations_per_stage_per_symbol: defaultdict[int, dict[str, float]] = {}
+    topological_ordering: List[trellis_graph.TrellisVertex]
+    F_values: Dict[trellis_graph.TrellisVertex, float]
+    B_values: Dict[trellis_graph.TrellisVertex, float]
+    Sm_per_stage_per_symbol: Dict[int, Dict[str, List[trellis_graph.TrellisVertex]]]
+    vertices_by_stage_by_substage_sorted_topologically: Dict[int, Dict[int, List[trellis_graph.TrellisVertex]]]
+    Vk_estimations_per_stage_per_symbol: DefaultDict[int, Dict[str, float]] = {}
 
 
 def compute_trellis_bma_estimation(traces, original):
