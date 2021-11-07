@@ -38,20 +38,23 @@ if __name__ == '__main__':
         centers, clusters = read_centers_and_clusters()
         results = []
         total_processed = 0
-        for idx, (original, traces) in enumerate(zip(centers[args.from_idx: args.to_idx], clusters[args.from_idx: args.to_idx])):
-            if len(traces) < args.trace_num:
-                logging.info(f"skipping cluster {args.from_idx+idx}, has {len(traces)} traces and {args.trace_num} required")
-                continue
-            chosen_traces = random.sample(traces, args.trace_num)
-            logging.info(f"original: {original}")
-            logging.info("traces:")
-            logging.info(",\n".join(chosen_traces))
-            total_processed += 1
-
-            results.append(algorithms.trellis_bma.compute_trellis_bma_estimation(chosen_traces, original))
-
         with open(args.results_file, "w") as f:
-            f.writelines((f"{hamm}, {leven}, {estimation}, {original}\n" for original, estimation, hamm, leven in results))
+            for idx, (original, traces) in enumerate(zip(centers[args.from_idx: args.to_idx], clusters[args.from_idx: args.to_idx])):
+                if len(traces) < args.trace_num:
+                    logging.info(f"skipping cluster {args.from_idx+idx}, has {len(traces)} traces and {args.trace_num} required")
+                    continue
+                chosen_traces = random.sample(traces, args.trace_num)
+                logging.info(f"original: {original}")
+                logging.info("traces:")
+                logging.info(",\n".join(chosen_traces))
+                total_processed += 1
+
+                result = algorithms.trellis_bma.compute_trellis_bma_estimation(chosen_traces, original)
+                results.append(result)
+                original, estimate, hamm, levenstein = result
+                f.write(f"{args.from_idx+idx}, {hamm}, {levenstein}, {estimate}, {original}\n")
+                f.flush()
+
     else:
         if USE_CUSTOM_TRACES:
             original = CUSTOM_ORIGINAL
