@@ -8,9 +8,11 @@ import numpy as np
 from collections import defaultdict
 import math
 
-beta_b = 0.1
-beta_i = 0
-beta_e = 1
+
+class TrellisBMAParams(NamedTuple):
+    beta_b: float
+    beta_i: float
+    beta_e: float
 
 
 class TrellisMetadata(NamedTuple):
@@ -23,16 +25,16 @@ class TrellisMetadata(NamedTuple):
     Vk_estimations_per_stage_per_symbol: DefaultDict[int, Dict[str, float]] = {}
 
 
-def compute_trellis_bma_estimation(traces, original):
+def compute_trellis_bma_estimation(traces, original, params: TrellisBMAParams):
     if ESTIMATE_SECOND_HALF_REVERSED:
-        first_half_estimates = build_trellis_and_estimate(traces, original, len(original) // 2)
+        first_half_estimates = build_trellis_and_estimate(traces, original, len(original) // 2, params)
         reversed_traces = [t[::-1] for t in traces]
         reversed_original = original[::-1]
         second_half_length = len(original) - (len(original)//2)
-        second_half_estimates = list(reversed(build_trellis_and_estimate(reversed_traces, reversed_original, second_half_length)))
+        second_half_estimates = list(reversed(build_trellis_and_estimate(reversed_traces, reversed_original, second_half_length, params)))
         final_estimate = first_half_estimates + second_half_estimates
     else:
-        final_estimate = build_trellis_and_estimate(traces, original, len(original))
+        final_estimate = build_trellis_and_estimate(traces, original, len(original), params)
 
     #for stage in reversed(range(len(original) // 2, len(original))):
     #    sync_probabilities_and_estimate_stage(stage, trellises_metadata, traces,
@@ -54,7 +56,7 @@ def compute_trellis_bma_estimation(traces, original):
     return original, final_estimate_str, hamm, levenstein
 
 
-def build_trellis_and_estimate(traces, original, estimation_len):
+def build_trellis_and_estimate(traces, original, estimation_len, params: TrellisBMAParams):
     trellises_metadata = []
 
     for trace in traces:
@@ -155,17 +157,17 @@ def build_trellis_and_estimate(traces, original, estimation_len):
         #                                                           for metadata in trellises_metadata)
         print(f"estimating stage: {stage}")
         sync_probabilities_and_estimate_stage(stage, trellises_metadata, traces,
-                                              V_per_index_per_symbol[stage], is_first_half=True)
+                                              V_per_index_per_symbol[stage], params, is_first_half=True)
 
         estimates.append(max(Alphabet, key=lambda c: V_per_index_per_symbol[stage][c]))
 
     return estimates
 
 
-def sync_probabilities_and_estimate_stage(stage, trellises_metadata, traces, V_per_symbol, is_first_half=True):
+def sync_probabilities_and_estimate_stage(stage, trellises_metadata, traces, V_per_symbol, params: TrellisBMAParams, is_first_half=True):
     # compute V^k for all trellises
     for trace_idx, trellis_metadata in enumerate(trellises_metadata):
-        compute_vk_for_trellis(stage, trace_idx, trellis_metadata)
+        compute_vk_for_trellis(stage, trace_idx, trellis_metadata, params)
         # if is_first_half:
         #     compute_vk_for_trellis(stage, trace_idx, trellis_metadata,
         #                            trellis_metadata.F_values, trellis_metadata.B_values)
@@ -176,7 +178,7 @@ def sync_probabilities_and_estimate_stage(stage, trellises_metadata, traces, V_p
     # Use V^k to update forward values for each trellis
     for trace_idx, trellis_metadata in enumerate(trellises_metadata):
         # Compute gamma^k(m) for all trellises
-        symbol_gammas = {c: compute_gamma_coeff_for_trellis_and_symbol(stage, c, trellis_metadata, trellises_metadata)
+        symbol_gammas = {c: compute_gamma_coeff_for_trellis_and_symbol(stage, c, trellis_metadata, trellises_metadata, params)
                          for c in Alphabet}
         # normalize gammas to avoid drift
         if USE_LOG_PROB:
@@ -241,7 +243,7 @@ def sync_probabilities_and_estimate_stage(stage, trellises_metadata, traces, V_p
                                              for metadata in trellises_metadata)
 
 
-def compute_vk_for_trellis(stage: int, trace_idx: int, trellis_metadata: TrellisMetadata):#, dominant_prob_dict, secondary_prob_dict):
+def compute_vk_for_trellis(stage: int, trace_idx: int, trellis_metadata: TrellisMetadata, params: TrellisBMAParams):#, dominant_prob_dict, secondary_prob_dict):
     for symbol in Alphabet:
         stage_final_vertices = trellis_metadata.Sm_per_stage_per_symbol[stage][symbol]
         # for v in stage_final_vertices:
@@ -252,8 +254,8 @@ def compute_vk_for_trellis(stage: int, trace_idx: int, trellis_metadata: Trellis
             #          else (v, -math.inf)
             #          for v in stage_final_vertices]
             f_values = [trellis_metadata.F_values[v] for v in stage_final_vertices]
-            b_values = [beta_b * trellis_metadata.B_values[v]
-                        if beta_b != 0 or trellis_metadata.B_values[v] != -math.inf
+            b_values = [params.beta_b * trellis_metadata.B_values[v]
+                        if params.beta_b != 0 or trellis_metadata.B_values[v] != -math.inf
                         else -math.inf
                         for v in stage_final_vertices]
             # print(values)
@@ -262,13 +264,13 @@ def compute_vk_for_trellis(stage: int, trace_idx: int, trellis_metadata: Trellis
                 print(f_values)
                 print(b_values)
 
-            estimated_v = np.logaddexp.reduce([trellis_metadata.F_values[v] + beta_b * trellis_metadata.B_values[v]
-                                               if beta_b != 0 or trellis_metadata.B_values[v] != -math.inf
+            estimated_v = np.logaddexp.reduce([trellis_metadata.F_values[v] + params.beta_b * trellis_metadata.B_values[v]
+                                               if params.beta_b != 0 or trellis_metadata.B_values[v] != -math.inf
                                                else -math.inf
                                                for v in stage_final_vertices])
         else:
-            estimated_v = sum(trellis_metadata.F_values[v] * (trellis_metadata.B_values[v] ** beta_b)
-                              if not math.isnan(trellis_metadata.B_values[v] ** beta_b)
+            estimated_v = sum(trellis_metadata.F_values[v] * (trellis_metadata.B_values[v] ** params.beta_b)
+                              if not math.isnan(trellis_metadata.B_values[v] ** params.beta_b)
                               else 0
                               for v in stage_final_vertices)
         trellis_metadata.Vk_estimations_per_stage_per_symbol[stage][symbol] = estimated_v
@@ -276,22 +278,22 @@ def compute_vk_for_trellis(stage: int, trace_idx: int, trellis_metadata: Trellis
         #    print(f"[trace{trace_idx}[{stage}]:{symbol}] = {estimated_v}")
 
 
-def compute_gamma_coeff_for_trellis_and_symbol(stage, symbol, trellis_metadata, trellises_metadata):
+def compute_gamma_coeff_for_trellis_and_symbol(stage, symbol, trellis_metadata, trellises_metadata, params: TrellisBMAParams):
     vk_estimation = trellis_metadata.Vk_estimations_per_stage_per_symbol[stage][symbol]
     if USE_LOG_PROB:
-        internal_factor = vk_estimation * beta_i
+        internal_factor = vk_estimation * params.beta_i
         external_factor = sum(trellis_j.Vk_estimations_per_stage_per_symbol[stage][symbol]
                               for trellis_j in trellises_metadata)
         external_factor -= vk_estimation
-        external_factor = external_factor * beta_e
+        external_factor = external_factor * params.beta_e
         gamma = internal_factor + external_factor
 
     else:
-        internal_factor = vk_estimation ** beta_i
+        internal_factor = vk_estimation ** params.beta_i
         external_factor = math.prod(trellis_j.Vk_estimations_per_stage_per_symbol[stage][symbol]
                                     for trellis_j in trellises_metadata)
         external_factor /= vk_estimation
-        external_factor = external_factor ** beta_e
+        external_factor = external_factor ** params.beta_e
         gamma = internal_factor * external_factor
 
     return gamma

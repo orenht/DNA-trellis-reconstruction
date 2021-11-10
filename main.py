@@ -2,9 +2,9 @@ import sys
 
 from consts import *
 import encoder
-import trellis_graph
 import algorithms.multi_trace
 import algorithms.trellis_bma
+from algorithms.trellis_bma import TrellisBMAParams
 import random
 
 import logging
@@ -56,6 +56,10 @@ if __name__ == '__main__':
                                                       "if a cluster has less than this number, it will be ignored")
     parser.add_argument("--from-idx", type=int, help="index of clusters in dataset to start from")
     parser.add_argument("--to-idx", type=int, help="index of clusters in dataset to finish (non inclusive)")
+    # TODO: make the defaults a function of trace num, to be the optimized hyperparams from the article
+    parser.add_argument("--beta-b", type=float, default=DEFAULT_BETA_B, help="weight for backward values in trellis BMA")
+    parser.add_argument("--beta-i", type=float, default=DEFAULT_BETA_I, help="weight for the current trace in trellis BMA")
+    parser.add_argument("--beta-e", type=float, default=DEFAULT_BETA_E, help="weight for the other traces in trellis BMA")
     parser.add_argument("--results-file", type=str, help="write the reconstruction results to this file")
     parser.add_argument("--input-results-file", type=str, help="when --parse is used, parse this results file")
     parser.add_argument("-wh", "--worst-n-hamming", type=int, help="output the worst N reconstructions by hamming distance")
@@ -114,6 +118,7 @@ if __name__ == '__main__':
             print(f"worst {args.worst_n_levenstein} cases by levenstein distance:")
             print_results(results[:args.worst_n_levenstein])
     elif args.reconstruct:
+        trellis_bma_params = TrellisBMAParams(beta_b=args.beta_b, beta_i=args.beta_i, beta_e=args.beta_e)
         if USE_NANOPORE_DATA_FROM_FILE:
             centers, clusters = read_centers_and_clusters()
             results = []
@@ -129,7 +134,7 @@ if __name__ == '__main__':
                     logging.info(",\n".join(chosen_traces))
                     total_processed += 1
 
-                    result = algorithms.trellis_bma.compute_trellis_bma_estimation(chosen_traces, original)
+                    result = algorithms.trellis_bma.compute_trellis_bma_estimation(chosen_traces, original, trellis_bma_params)
                     results.append(result)
                     original, estimate, hamm, levenstein = result
                     f.write(f"{args.from_idx+idx}, {hamm}, {levenstein}, {estimate}, {original}\n")
@@ -145,6 +150,6 @@ if __name__ == '__main__':
             logging.info(traces)
             #trellis_graph = trellis_graph.build_new(original, traces)
             #algorithms.multi_trace.compute_marginal_prob_for_each_vertex(trellis_graph, traces, original)
-            algorithms.trellis_bma.compute_trellis_bma_estimation(traces, original)
+            algorithms.trellis_bma.compute_trellis_bma_estimation(traces, original, trellis_bma_params)
     else:
         print("must choose args or reconstruct!")
