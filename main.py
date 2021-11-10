@@ -92,6 +92,14 @@ if __name__ == '__main__':
         print(f"Normalized hamming: {normalized_hamming}, avg hamming: {avg_hamming}")
         print(f"Normalized levenstein: {normalized_levenstein}, avg levenstein: {avg_levenstein}")
 
+        if args.worst_n_hamming:
+            results.sort(key=lambda res: res.hamming, reverse=True)
+            print(f"worst {args.worst_n_hamming} cases by hamming distance:")
+            print_results(results[:args.worst_n_hamming])
+        if args.worst_n_levenstein:
+            results.sort(key=lambda res: res.levenstein, reverse=True)
+            print(f"worst {args.worst_n_levenstein} cases by levenstein distance:")
+            print_results(results[:args.worst_n_levenstein])
         if args.error_histogram:
             hammings_counter = Counter(hammings)
             levensteins_counter = Counter(levensteins)
@@ -109,14 +117,6 @@ if __name__ == '__main__':
             #fig.show()
             plt.tight_layout()
             plt.show()
-        if args.worst_n_hamming:
-            results.sort(key=lambda res: res.hamming, reverse=True)
-            print(f"worst {args.worst_n_hamming} cases by hamming distance:")
-            print_results(results[:args.worst_n_hamming])
-        if args.worst_n_levenstein:
-            results.sort(key=lambda res: res.levenstein, reverse=True)
-            print(f"worst {args.worst_n_levenstein} cases by levenstein distance:")
-            print_results(results[:args.worst_n_levenstein])
     elif args.reconstruct:
         trellis_bma_params = TrellisBMAParams(beta_b=args.beta_b, beta_i=args.beta_i, beta_e=args.beta_e)
         if USE_NANOPORE_DATA_FROM_FILE:
