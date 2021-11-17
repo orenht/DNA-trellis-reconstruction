@@ -226,6 +226,7 @@ def sync_probabilities_and_estimate_stage(stage, trellises_metadata, traces, V_p
                     trellis_metadata.F_values[v] = new_f
         else:
             # backward pass B values
+            # TODO: does this even make sense? what is this propagation?
             # update all substages in current stage, including -1, in reverse order
             for substage in reversed([-1] + list(range(len(traces)))):
                 for v in trellis_metadata.vertices_by_stage_by_substage_sorted_topologically[stage][substage]:

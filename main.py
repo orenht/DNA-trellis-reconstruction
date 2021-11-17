@@ -10,6 +10,7 @@ import random
 import logging
 import argparse
 import time
+import re
 from typing import NamedTuple
 from collections import Counter
 import matplotlib.pyplot as plt
@@ -23,6 +24,16 @@ class ResultEntry(NamedTuple):
     levenstein: int
 
 
+class ResultData(NamedTuple):
+    filename: str
+    trace_num: int
+    results: list[ResultEntry]
+    avg_hamming: float
+    normalized_hamming: float
+    avg_levenstein: float
+    normalized_levenstein: float
+
+
 def read_centers_and_clusters():
     centers = []
     with open("Centers.txt") as f:
@@ -34,6 +45,14 @@ def read_centers_and_clusters():
                     if cluster != ""]
 
     return centers, clusters
+
+
+def parse_results_file(results_file):
+    with open(results_file) as f:
+        data = f.readlines()
+    stripped_data = [[s.strip() for s in line.split(",")] for line in data]
+    results = [ResultEntry(int(r[0]), r[4], r[3], int(r[1]), int(r[2])) for r in stripped_data]
+    return results
 
 
 def print_results(results):
@@ -61,7 +80,8 @@ if __name__ == '__main__':
     parser.add_argument("--beta-i", type=float, default=DEFAULT_BETA_I, help="weight for the current trace in trellis BMA")
     parser.add_argument("--beta-e", type=float, default=DEFAULT_BETA_E, help="weight for the other traces in trellis BMA")
     parser.add_argument("--results-file", type=str, help="write the reconstruction results to this file")
-    parser.add_argument("--input-results-file", type=str, help="when --parse is used, parse this results file")
+    parser.add_argument("--input-results-file", type=str, nargs='+',
+                        help="when --parse is used, parse this results file/s.")
     parser.add_argument("-wh", "--worst-n-hamming", type=int, help="output the worst N reconstructions by hamming distance")
     parser.add_argument("-wl", "--worst-n-levenstein", type=int, help="output the worst N reconstructions by levenstein distance")
     parser.add_argument("-eh", "--error-histogram", action="store_true", help="plot hamming and levenstein error histograms")
@@ -75,48 +95,78 @@ if __name__ == '__main__':
         if not args.input_results_file:
             print("missing input results file!")
             sys.exit(1)
-        with open(args.input_results_file) as f:
-            data = f.readlines()
-        stripped_data = [[s.strip() for s in line.split(",")] for line in data]
-        results = [ResultEntry(int(r[0]), r[4], r[3], int(r[1]), int(r[2])) for r in stripped_data]
+        results_by_file = dict()
+        for res_file in args.input_results_file:
+            results_by_file[res_file] = parse_results_file(res_file)
 
-        # general info
-        hammings = [r.hamming for r in results]
-        levensteins = [r.levenstein for r in results]
-        avg_hamming = sum(hammings) / len(hammings)
-        avg_levenstein = sum(levensteins) / len(levensteins)
-        normalized_hamming = sum([r.hamming/len(r.original) for r in results]) / len(results)
-        normalized_levenstein = sum([r.levenstein / len(r.original) for r in results]) / len(results)
+        for file, results in results_by_file.items():
+            print(f"file: {file}")
+            # general info
+            hammings = [r.hamming for r in results]
+            levensteins = [r.levenstein for r in results]
+            avg_hamming = sum(hammings) / len(hammings)
+            avg_levenstein = sum(levensteins) / len(levensteins)
+            normalized_hamming = sum([r.hamming/len(r.original) for r in results]) / len(results)
+            normalized_levenstein = sum([r.levenstein / len(r.original) for r in results]) / len(results)
 
-        print(f"read {len(results)} samples:")
-        print(f"Normalized hamming: {normalized_hamming}, avg hamming: {avg_hamming}")
-        print(f"Normalized levenstein: {normalized_levenstein}, avg levenstein: {avg_levenstein}")
+            # parse trace num
+            trace_num = int(re.search("results_(\\d+)_traces", file).group(1))
 
-        if args.worst_n_hamming:
-            results.sort(key=lambda res: res.hamming, reverse=True)
-            print(f"worst {args.worst_n_hamming} cases by hamming distance:")
-            print_results(results[:args.worst_n_hamming])
-        if args.worst_n_levenstein:
-            results.sort(key=lambda res: res.levenstein, reverse=True)
-            print(f"worst {args.worst_n_levenstein} cases by levenstein distance:")
-            print_results(results[:args.worst_n_levenstein])
-        if args.error_histogram:
-            hammings_counter = Counter(hammings)
-            levensteins_counter = Counter(levensteins)
+            results_data = ResultData(file, trace_num, results, avg_hamming, normalized_hamming, avg_levenstein, normalized_levenstein)
+            results_by_file[file] = results_data
 
+            print(f"trace num: {trace_num}")
+
+            print(f"read {len(results)} samples:")
+            print(f"Normalized hamming: {normalized_hamming}, avg hamming: {avg_hamming}")
+            print(f"Normalized levenstein: {normalized_levenstein}, avg levenstein: {avg_levenstein}")
+
+        if len(results_by_file) > 1:
+            # draw comparison
+            trace_nums = [res.trace_num for res in results_by_file.values()]
+            normalized_hammings = [res.normalized_hamming for res in results_by_file.values()]
+            normalized_levensteins = [res.normalized_levenstein for res in results_by_file.values()]
             fig, (sub1, sub2) = plt.subplots(2)
-
-            sub1.hist(hammings, bins=max(hammings))
-            sub1.set_ylabel("count")
-            sub1.set_xlabel("hamming distance")
-            sub2.hist(levensteins, bins=max(levensteins))
-            sub2.set_ylabel("count")
-            sub2.set_xlabel("levenstein distance")
-            #plt.hist(levensteins)
-            #plt.bar(levensteins_counter.keys(), levensteins_counter.values())
-            #fig.show()
+            sub1.plot(trace_nums, normalized_hammings, "ro-")
+            sub1.set_ylabel("normalized hamming")
+            sub1.set_xlabel("trace num")
+            for x, y in zip(trace_nums, normalized_hammings):
+                sub1.annotate(f"{y:.4f}", xy=(x+0.25, y))
+            sub2.plot(trace_nums, normalized_levensteins, "ro-")
+            sub2.set_ylabel("normalized levenstein")
+            sub2.set_xlabel("trace num")
+            for x, y in zip(trace_nums, normalized_levensteins):
+                sub2.annotate(f"{y:.4f}", xy=(x+0.25, y))
             plt.tight_layout()
             plt.show()
+
+        for file, result_data in results_by_file.items():
+            results = result_data.results
+            if args.worst_n_hamming:
+                results.sort(key=lambda res: res.hamming, reverse=True)
+                print(f"worst {args.worst_n_hamming} cases by hamming distance:")
+                print_results(results[:args.worst_n_hamming])
+            if args.worst_n_levenstein:
+                results.sort(key=lambda res: res.levenstein, reverse=True)
+                print(f"worst {args.worst_n_levenstein} cases by levenstein distance:")
+                print_results(results[:args.worst_n_levenstein])
+            if args.error_histogram:
+                hammings_counter = Counter(hammings)
+                levensteins_counter = Counter(levensteins)
+
+                fig, (sub1, sub2) = plt.subplots(2)
+
+                sub1.hist(hammings, bins=max(hammings))
+                sub1.set_ylabel("count")
+                sub1.set_xlabel("hamming distance")
+                sub2.hist(levensteins, bins=max(levensteins))
+                sub2.set_ylabel("count")
+                sub2.set_xlabel("levenstein distance")
+                #plt.hist(levensteins)
+                #plt.bar(levensteins_counter.keys(), levensteins_counter.values())
+                #fig.show()
+                plt.tight_layout()
+                plt.show()
     elif args.reconstruct:
         trellis_bma_params = TrellisBMAParams(beta_b=args.beta_b, beta_i=args.beta_i, beta_e=args.beta_e)
         if USE_NANOPORE_DATA_FROM_FILE:
