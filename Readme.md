@@ -90,7 +90,7 @@ The source results file are in the results/* directory, and each trace number wa
 
 Our results:
 
-![Normalized hamming and edit distance](results/test_results.png)
+![Normalized hamming and edit distance](results/our_results.png)
 
 Paper's results:
 
