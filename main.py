@@ -71,6 +71,7 @@ if __name__ == '__main__':
     main_options.add_argument("-p", "--parse", action="store_true", help="parse the input file instead of performing reconstruction")
     main_options.add_argument("-r", "--reconstruct", action="store_true", help="reconstruct DNA string from traces")
 
+    parser.add_argument("--algorithm", default="trellis-bma", choices=["trellis-bma", "multi-trace"], help="Algorithm to be used for trace reconstruction")
     parser.add_argument("--trace-num", type=int, help="Number of traces to use for each cluster. "
                                                       "if a cluster has less than this number, it will be ignored")
     parser.add_argument("--from-idx", type=int, help="index of clusters in dataset to start from")
@@ -168,7 +169,11 @@ if __name__ == '__main__':
                 plt.tight_layout()
                 plt.show()
     elif args.reconstruct:
-        trellis_bma_params = TrellisBMAParams(beta_b=args.beta_b, beta_i=args.beta_i, beta_e=args.beta_e)
+        if args.algorithm == "trellis-bma":
+            print("Algorithm: trellis BMA")
+            trellis_bma_params = TrellisBMAParams(beta_b=args.beta_b, beta_i=args.beta_i, beta_e=args.beta_e)
+        elif args.algorithm == "multi-trace":
+            print("Algorithm: multi trace")
         if USE_NANOPORE_DATA_FROM_FILE:
             centers, clusters = read_centers_and_clusters()
             results = []
@@ -184,7 +189,13 @@ if __name__ == '__main__':
                     logging.info(",\n".join(chosen_traces))
                     total_processed += 1
 
-                    result = algorithms.trellis_bma.compute_trellis_bma_estimation(chosen_traces, original, trellis_bma_params)
+                    if args.algorithm == "trellis-bma":
+                        result = algorithms.trellis_bma.compute_trellis_bma_estimation(chosen_traces, original, trellis_bma_params)
+                    elif args.algorithm == "multi-trace":
+                        result = algorithms.multi_trace.compute_multi_trace_estimation(chosen_traces, original)
+                    else:
+                        print("No valid algorithm given")
+                        sys.exit(0)
                     results.append(result)
                     original, estimate, hamm, levenstein = result
                     f.write(f"{args.from_idx+idx}, {hamm}, {levenstein}, {estimate}, {original}\n")

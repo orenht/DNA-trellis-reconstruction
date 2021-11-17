@@ -37,9 +37,10 @@ This project is a command line tool that serves two purposes -
 
 Usage as printed by running `--help`:
 ```
-usage: main.py [-h] [-p | -r] [--trace-num TRACE_NUM] [--from-idx FROM_IDX]
-               [--to-idx TO_IDX] [--beta-b BETA_B] [--beta-i BETA_I]
-               [--beta-e BETA_E] [--results-file RESULTS_FILE]
+usage: main.py [-h] [-p | -r] [--algorithm {trellis-bma,multi-trace}]
+               [--trace-num TRACE_NUM] [--from-idx FROM_IDX] [--to-idx TO_IDX]
+               [--beta-b BETA_B] [--beta-i BETA_I] [--beta-e BETA_E]
+               [--results-file RESULTS_FILE]
                [--input-results-file INPUT_RESULTS_FILE [INPUT_RESULTS_FILE ...]]
                [-wh WORST_N_HAMMING] [-wl WORST_N_LEVENSTEIN] [-eh]
 
@@ -50,6 +51,8 @@ optional arguments:
   -p, --parse           parse the input file instead of performing
                         reconstruction
   -r, --reconstruct     reconstruct DNA string from traces
+  --algorithm {trellis-bma,multi-trace}
+                        Algorithm to be used for trace reconstruction
   --trace-num TRACE_NUM
                         Number of traces to use for each cluster. if a cluster
                         has less than this number, it will be ignored

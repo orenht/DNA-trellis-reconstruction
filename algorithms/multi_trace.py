@@ -1,21 +1,22 @@
 import random
-import itertools
 import math
-from decimal import *
-from collections import defaultdict
-import matplotlib.pyplot as plt
-import logging
 
 import networkx as nx
 
 from consts import *
 import algorithms.common
+import trellis_graph
 
 from typing import NamedTuple
 
 import numpy as np
 from scipy.stats import rv_discrete
 from enum import IntEnum
+
+
+def compute_multi_trace_estimation(traces, original):
+    trellis = trellis_graph.build_new(original, traces)
+    return compute_marginal_prob_for_each_vertex(trellis, traces, original)
 
 
 def compute_marginal_prob_for_each_vertex(trellis, traces, original):
@@ -81,3 +82,5 @@ def compute_marginal_prob_for_each_vertex(trellis, traces, original):
     levenstein = algorithms.common.levenshtein_distance(original, estimated_original_str)
     print(f"levenstein distance: {levenstein}")
     print(f"traces: {traces}")
+
+    return original, estimated_original_str, hamm, levenstein
