@@ -90,7 +90,8 @@ if __name__ == '__main__':
 
     if not args.results_file:
         current_datetime = time.strftime("%Y%m%d-%H_%M_%S")
-        args.results_file = f"results_{args.trace_num}_traces_{args.algorithm}_{current_datetime}.txt"
+        algorithm_str = args.algorithm.replace("-", "_")
+        args.results_file = f"results_{args.trace_num}_traces_{algorithm_str}_{current_datetime}.txt"
 
     if args.parse:
         if not args.input_results_file:
