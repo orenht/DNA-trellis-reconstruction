@@ -11,7 +11,7 @@ import logging
 import argparse
 import time
 import re
-from typing import NamedTuple
+from typing import NamedTuple, List
 from collections import Counter
 import matplotlib.pyplot as plt
 
@@ -27,7 +27,7 @@ class ResultEntry(NamedTuple):
 class ResultData(NamedTuple):
     filename: str
     trace_num: int
-    results: list[ResultEntry]
+    results: List[ResultEntry]
     avg_hamming: float
     normalized_hamming: float
     avg_levenstein: float
