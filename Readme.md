@@ -89,9 +89,11 @@ The source results file are in the results/* directory, and each trace number wa
 **Normalized hamming distance comparison** 
 
 Our results:
+
 ![Normalized hamming and edit distance](results/test_results.png)
 
 Paper's results:
+
 ![Paper's normalized hamming distance](results/paper_results.png)
 
 The other statistics can be obtained by running:
