@@ -77,9 +77,9 @@ optional arguments:
 
 ##### Algorithms Used
 ###### Multi-trace Trellis
-pass
+<TODO: detail>
 ###### Trellis BMA
-pass
+<TODO: detail>
 
 ##### Results
 
