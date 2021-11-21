@@ -106,18 +106,17 @@ python3 main.py -p --error-histogram --worst-n-hamming 10 --worst-n-levenstein 1
 They include hamming and levenstein distance histogram, worst cases by hamming and levenstein distance, and average stats as opposed to normalized (by length).
 
 ###### Differences from original paper
+* It was unclear how the data was analyzed. Most of the clusters contain many traces, so we drew at random _n_ traces from each cluster.
 * No consideration for ECC in trellis generation
 * No consideration for blocking drift of output pointer from input pointer (to improve complexity) in trellis generation  
 * No usage of β<sub>0</sub> parameter in trellis BMA
 * Used fixed weight parameters and not the "optimized" hyperparameters for each number of traces
-* It was unclear how to estimate the second half of the string, the method they suggested didn't work correctly. 
-  We estimated the first half, reversed the traces, built the trellises from scratch and estimated the second one the same way.
+* It was unclear how to estimate the second half of the string, we didn't understand their approach. 
+  Therefore, we estimated the first half, reversed the traces, built the trellises from scratch and estimated the second one the same way.
   
   The problem is that it is slow about twice as much, because the trellis generation (which is the bottleneck) is done twice.
 * It was unclear how forward values (F<sup>k</sup>(v)) propagation worked in trellis BMA. I propagated it in the same way as the multi-trace trellis algorithm.
 
-###### Challenges
-pass
 
 [1] S. R. Srinivasavaradhan, S. Gopi, H. D. Pfister and S. Yekhanin, "Trellis BMA: Coded Trace Reconstruction on IDS Channels for DNA Storage," 2021 IEEE International Symposium on Information Theory (ISIT), 2021, pp. 2453-2458, doi: 10.1109/ISIT45174.2021.9517821.
 
