@@ -95,7 +95,7 @@ Our results:
 
 ![Normalized hamming and edit distance](results/our_results.png)
 
-Paper's results:
+Paper's[1] results:
 
 ![Paper's normalized hamming distance](results/paper_results.png)
 
