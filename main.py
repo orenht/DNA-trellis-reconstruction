@@ -140,6 +140,8 @@ if __name__ == '__main__':
             for x, y in zip(trace_nums, normalized_levensteins):
                 sub2.annotate(f"{y:.4f}", xy=(x+0.25, y))
             plt.tight_layout()
+            sub1.grid()
+            sub2.grid()
             plt.show()
 
         for file, result_data in results_by_file.items():
@@ -168,6 +170,8 @@ if __name__ == '__main__':
                 #plt.bar(levensteins_counter.keys(), levensteins_counter.values())
                 #fig.show()
                 plt.tight_layout()
+                sub1.grid()
+                sub2.grid()
                 plt.show()
     elif args.reconstruct:
         if args.algorithm == "trellis-bma":
