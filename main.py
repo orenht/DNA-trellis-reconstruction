@@ -153,20 +153,22 @@ if __name__ == '__main__':
                                                   if res.algorithm == AlgorithmType.MultiTrace]
 
             fig, (sub1, sub2) = plt.subplots(2)
-            sub1.plot(trellis_bma_trace_nums, trellis_bma_normalized_hammings, "ro-")
-            sub1.plot(multi_trace_trace_nums, multi_trace_normalized_hammings, "bP")
+            sub1.plot(trellis_bma_trace_nums, trellis_bma_normalized_hammings, "ro-", label="Trellis BMA")
+            sub1.plot(multi_trace_trace_nums, multi_trace_normalized_hammings, "bP", label="Multi Trace")
             sub1.set_ylabel("Normalized Hamming")
             sub1.set_xlabel("Trace Number")
+            sub1.legend()
 
             for x, y in zip(trellis_bma_trace_nums, trellis_bma_normalized_hammings):
                 sub1.annotate(f"{y:.4f}", xy=(x+0.25, y))
             for x, y in zip(multi_trace_trace_nums, multi_trace_normalized_hammings):
                 sub1.annotate(f"{y:.4f}", xy=(x+0.25, y))
 
-            sub2.plot(trellis_bma_trace_nums, trellis_bma_normalized_levensteins, "ro-")
-            sub2.plot(multi_trace_trace_nums, multi_trace_normalized_levensteins, "bP")
+            sub2.plot(trellis_bma_trace_nums, trellis_bma_normalized_levensteins, "ro-", label="Trellis BMA")
+            sub2.plot(multi_trace_trace_nums, multi_trace_normalized_levensteins, "bP", label="Multi Trace")
             sub2.set_ylabel("Normalized Levenstein")
             sub2.set_xlabel("Trace Number")
+            sub2.legend()
 
             for x, y in zip(trellis_bma_trace_nums, trellis_bma_normalized_levensteins):
                 sub2.annotate(f"{y:.4f}", xy=(x+0.25, y))
