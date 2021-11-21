@@ -13,7 +13,13 @@ import time
 import re
 from typing import NamedTuple, List
 from collections import Counter
+from enum import Enum
 import matplotlib.pyplot as plt
+
+
+class AlgorithmType(Enum):
+    MultiTrace = 1
+    TrellisBMA = 2
 
 
 class ResultEntry(NamedTuple):
@@ -27,6 +33,7 @@ class ResultEntry(NamedTuple):
 class ResultData(NamedTuple):
     filename: str
     trace_num: int
+    algorithm: AlgorithmType
     results: List[ResultEntry]
     avg_hamming: float
     normalized_hamming: float
@@ -111,13 +118,20 @@ if __name__ == '__main__':
             normalized_hamming = sum([r.hamming/len(r.original) for r in results]) / len(results)
             normalized_levenstein = sum([r.levenstein / len(r.original) for r in results]) / len(results)
 
+            # parse algorithm type
+            if "multi_trace" in file:
+                algorithm = AlgorithmType.MultiTrace
+            else:
+                # Default type is Trellis BMA for convenience
+                algorithm = AlgorithmType.TrellisBMA
             # parse trace num
             trace_num = int(re.search("results_(\\d+)_traces", file).group(1))
 
-            results_data = ResultData(file, trace_num, results, avg_hamming, normalized_hamming, avg_levenstein, normalized_levenstein)
+            results_data = ResultData(file, trace_num, algorithm, results, avg_hamming, normalized_hamming, avg_levenstein, normalized_levenstein)
             results_by_file[file] = results_data
 
             print(f"trace num: {trace_num}")
+            print(f"algorithm type: {algorithm.name}")
 
             print(f"read {len(results)} samples:")
             print(f"Normalized hamming: {normalized_hamming}, avg hamming: {avg_hamming}")
@@ -125,19 +139,38 @@ if __name__ == '__main__':
 
         if len(results_by_file) > 1:
             # draw comparison
-            trace_nums = [res.trace_num for res in results_by_file.values()]
-            normalized_hammings = [res.normalized_hamming for res in results_by_file.values()]
-            normalized_levensteins = [res.normalized_levenstein for res in results_by_file.values()]
+            trellis_bma_trace_nums = [res.trace_num for res in results_by_file.values()
+                                      if res.algorithm == AlgorithmType.TrellisBMA]
+            trellis_bma_normalized_hammings = [res.normalized_hamming for res in results_by_file.values()
+                                               if res.algorithm == AlgorithmType.TrellisBMA]
+            trellis_bma_normalized_levensteins = [res.normalized_levenstein for res in results_by_file.values()
+                                                  if res.algorithm == AlgorithmType.TrellisBMA]
+            multi_trace_trace_nums = [res.trace_num for res in results_by_file.values()
+                                      if res.algorithm == AlgorithmType.MultiTrace]
+            multi_trace_normalized_hammings = [res.normalized_hamming for res in results_by_file.values()
+                                               if res.algorithm == AlgorithmType.MultiTrace]
+            multi_trace_normalized_levensteins = [res.normalized_levenstein for res in results_by_file.values()
+                                                  if res.algorithm == AlgorithmType.MultiTrace]
+
             fig, (sub1, sub2) = plt.subplots(2)
-            sub1.plot(trace_nums, normalized_hammings, "ro-")
-            sub1.set_ylabel("normalized hamming")
-            sub1.set_xlabel("trace num")
-            for x, y in zip(trace_nums, normalized_hammings):
+            sub1.plot(trellis_bma_trace_nums, trellis_bma_normalized_hammings, "ro-")
+            sub1.plot(multi_trace_trace_nums, multi_trace_normalized_hammings, "bP")
+            sub1.set_ylabel("Normalized Hamming")
+            sub1.set_xlabel("Trace Number")
+
+            for x, y in zip(trellis_bma_trace_nums, trellis_bma_normalized_hammings):
                 sub1.annotate(f"{y:.4f}", xy=(x+0.25, y))
-            sub2.plot(trace_nums, normalized_levensteins, "ro-")
-            sub2.set_ylabel("normalized levenstein")
-            sub2.set_xlabel("trace num")
-            for x, y in zip(trace_nums, normalized_levensteins):
+            for x, y in zip(multi_trace_trace_nums, multi_trace_normalized_hammings):
+                sub1.annotate(f"{y:.4f}", xy=(x+0.25, y))
+
+            sub2.plot(trellis_bma_trace_nums, trellis_bma_normalized_levensteins, "ro-")
+            sub2.plot(multi_trace_trace_nums, multi_trace_normalized_levensteins, "bP")
+            sub2.set_ylabel("Normalized Levenstein")
+            sub2.set_xlabel("Trace Number")
+
+            for x, y in zip(trellis_bma_trace_nums, trellis_bma_normalized_levensteins):
+                sub2.annotate(f"{y:.4f}", xy=(x+0.25, y))
+            for x, y in zip(multi_trace_trace_nums, multi_trace_normalized_levensteins):
                 sub2.annotate(f"{y:.4f}", xy=(x+0.25, y))
             plt.tight_layout()
             sub1.grid()
@@ -146,6 +179,7 @@ if __name__ == '__main__':
 
         for file, result_data in results_by_file.items():
             results = result_data.results
+            print(f"File: {file}")
             if args.worst_n_hamming:
                 results.sort(key=lambda res: res.hamming, reverse=True)
                 print(f"worst {args.worst_n_hamming} cases by hamming distance:")
