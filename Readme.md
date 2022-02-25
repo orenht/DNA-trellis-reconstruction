@@ -79,9 +79,21 @@ optional arguments:
 
 
 ##### Algorithms Used
+(For more elaborate explanations, see [1])
 ###### Multi-trace Trellis
-<TODO: detail>
+This algorithm creates a single trellis from all the traces. The trellis is essentially a DAG that models
+the different events that could lead to the received set of traces, i.e the possible deletion, insertion and substitution events.
+Each edge has a weight that is the probability this event had occurred (for example, that the first symbol in the first trace was substitued from A to T).
+
+Each directed path from the first vertex to a "receiving" vertex represents a possible series of events with a certain joint distribution.
+The algorithm builds the trellis and then uses BCJR inference to compute the most likely source symbol at each stage.
+
+Since this algorithm combines all the traces to a single graph, by its design it's exponential in the number of traces (bad), 
+but is more accurate as it represents the "real" probabilities and paths that each transmissions went through. 
+
 ###### Trellis BMA
+
+
 <TODO: detail>
 
 ##### Results
@@ -110,7 +122,7 @@ They include hamming and levenstein distance histogram, worst cases by hamming a
 
 ###### Differences from original paper
 * It was unclear how the data was analyzed. Most of the clusters contain many traces, so we drew at random _n_ traces from each cluster.
-* No consideration for ECC in trellis generation
+* No consideration for ECC (error correcting code) in trellis generation
 * No consideration for blocking drift of output pointer from input pointer (to improve complexity) in trellis generation  
 * No usage of β<sub>0</sub> parameter in trellis BMA
 * Used fixed weight parameters and not the "optimized" hyperparameters for each number of traces
@@ -123,4 +135,4 @@ They include hamming and levenstein distance histogram, worst cases by hamming a
 
 [1] S. R. Srinivasavaradhan, S. Gopi, H. D. Pfister and S. Yekhanin, "Trellis BMA: Coded Trace Reconstruction on IDS Channels for DNA Storage," 2021 IEEE International Symposium on Information Theory (ISIT), 2021, pp. 2453-2458, doi: 10.1109/ISIT45174.2021.9517821.
 
-https://ieeexplore.ieee.org/abstract/document/9517821
+https://arxiv.org/abs/2107.06440
