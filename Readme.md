@@ -89,12 +89,15 @@ Each directed path from the first vertex to a "receiving" vertex represents a po
 The algorithm builds the trellis and then uses BCJR inference to compute the most likely source symbol at each stage.
 
 Since this algorithm combines all the traces to a single graph, by its design it's exponential in the number of traces (bad), 
-but is more accurate as it represents the "real" probabilities and paths that each transmissions went through. 
+but is more accurate as it represents the "real" probabilities and paths that each transmission went through. 
 
 ###### Trellis BMA
+This algorithm is based on the multi-trace trellis, but is aimed to improve its exponential time complexity. 
+Instead of building a single trellis graph from all the traces, It builds a separate graph for each trace, 
+and syncs the probabilities of paths from different graphs. The algorithm approximates the probabilities at each stage 
+by weighting the prior and posterior probabilities for each path in each trellis. The formula and possible weights can be found in the paper.
 
-
-<TODO: detail>
+The main advantage of this algorithm is its running complexity which is linear in the number of traces and length of the string.
 
 ##### Results
 
